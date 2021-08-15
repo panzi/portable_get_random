@@ -62,8 +62,8 @@ you need to add the compiler flag: `-DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RAND
 That means if you want to use e.g. `RtlGenRandom` use the flag:
 `-DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_RtlGenRandom` For `/dev/random`
 it would be: `-DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_dev_random`
-For this and `dlsym` you can define the extra flag `PORTABLE_GET_RANDOM_DEV_RANDOM`,
-e.g.: `-DPORTABLE_GET_RANDOM_DEV_RANDOM='"/dev/urandom"'`
+For this and `dlsym` you can define the extra flag `PORTABLE_GET_RANDOM_FILE`,
+e.g.: `-DPORTABLE_GET_RANDOM_FILE='"/dev/urandom"'`
 
 License
 -------

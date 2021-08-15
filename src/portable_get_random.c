@@ -46,8 +46,8 @@
     #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_dlsym
 #endif
 
-#if !defined(PORTABLE_GET_RANDOM_DEV_RANDOM)
-    #define PORTABLE_GET_RANDOM_DEV_RANDOM "/dev/random"
+#if !defined(PORTABLE_GET_RANDOM_FILE)
+    #define PORTABLE_GET_RANDOM_FILE "/dev/random"
 #endif
 
 #if !defined(PORTABLE_GET_RANDOM_IMPL)
@@ -225,7 +225,7 @@ dispatch:
 
         case PortableGetRandom_DevRandom:
         {
-            FILE *stream = fopen(PORTABLE_GET_RANDOM_DEV_RANDOM, "rb");
+            FILE *stream = fopen(PORTABLE_GET_RANDOM_FILE, "rb");
 
             if (stream == NULL) {
                 return errno;
@@ -496,7 +496,7 @@ int portable_get_random(unsigned char *buffer, size_t size) {
     #include <stdio.h>
 
 int portable_get_random(unsigned char *buffer, size_t size) {
-    FILE *stream = fopen(PORTABLE_GET_RANDOM_DEV_RANDOM, "rb");
+    FILE *stream = fopen(PORTABLE_GET_RANDOM_FILE, "rb");
 
     if (stream == NULL) {
         return errno;

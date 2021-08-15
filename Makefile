@@ -68,7 +68,7 @@ ifeq ($(REAL_IMPL),dlsym)
 else
 ifeq ($(patsubst /dev/%,/dev/,$(REAL_IMPL)),/dev/)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_dev_random \
-              -DPORTABLE_GET_RANDOM_DEV_RANDOM=\"$(REAL_IMPL)\"
+              -DPORTABLE_GET_RANDOM_FILE=\"$(REAL_IMPL)\"
 else
 ifneq ($(REAL_IMPL),)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_$(REAL_IMPL)
