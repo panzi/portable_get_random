@@ -235,7 +235,10 @@ dispatch:
     }
 }
 
-#elif (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_RtlGenRandom) || (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_CryptGenRandom) || (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom)
+#elif (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_RtlGenRandom) || \
+      (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_CryptGenRandom) || \
+      (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom) || \
+      (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_LoadLibrary)
 
     #include <windows.h>
 
@@ -282,7 +285,72 @@ int portable_get_random(unsigned char *buffer, size_t size) {
         #include <wincrypt.h>
         #include <errno.h>
 
+        #if PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_LoadLibrary
+
+            #include <ntstatus.h>
+
+enum PortableGetRandom_Impl {
+    PortableGetRandom_Uninitialized,
+    PortableGetRandom_Crypt,
+    PortableGetRandom_BCrypt,
+};
+
+static int portable_get_random_crypt(unsigned char *buffer, size_t size);
+
 int portable_get_random(unsigned char *buffer, size_t size) {
+    static enum PortableGetRandom_Impl impl = PortableGetRandom_Uninitialized;
+    static NTSTATUS (WINAPI *BCryptGenRandom)(BCRYPT_ALG_HANDLE, PUCHAR, ULONG, ULONG) = NULL;
+
+dispatch:
+    switch (impl) {
+        case PortableGetRandom_Uninitialized:
+        {
+            HMODULE bcrypt = LoadLibraryA("bcrypt.dll");
+            if (bcrypt == NULL) {
+                impl = PortableGetRandom_Crypt;
+                goto dispatch;
+            }
+
+            BCryptGenRandom = (NTSTATUS (WINAPI*)(BCRYPT_ALG_HANDLE, PUCHAR, ULONG, ULONG))GetProcAddress(bcrypt, "BCryptGenRandom");
+            if (BCryptGenRandom == NULL) {
+                impl = PortableGetRandom_Crypt;
+                goto dispatch;
+            }
+
+            impl = PortableGetRandom_BCrypt;
+            goto dispatch;
+            break;
+        }
+
+        case PortableGetRandom_Crypt:
+            return portable_get_random_crypt(buffer, size);
+
+        case PortableGetRandom_BCrypt:
+        {
+            NTSTATUS status = BCryptGenRandom(NULL, buffer, size, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+
+            if (status != STATUS_SUCCESS) {
+                switch (status) {
+                    case STATUS_INVALID_HANDLE:
+                        return EBADF;
+
+                    case STATUS_INVALID_PARAMETER:
+                    default:
+                        return EINVAL;
+                }
+            }
+            return 0;
+        }
+
+        default:
+            return ENOSYS;
+    }
+}
+
+int portable_get_random_crypt(unsigned char *buffer, size_t size) {
+        #else
+int portable_get_random(unsigned char *buffer, size_t size) {
+        #endif
     HCRYPTPROV hCryptProv = (HCRYPTPROV)-1;
     DWORD error = ERROR_SUCCESS;
 

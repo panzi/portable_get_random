@@ -53,10 +53,9 @@ Possible values for `IMPL`:
 | `/dev/random`        | *nix, Haiku             | Can be any `/dev/*` file. Read entropy from the given `/dev`-file. Default for any other OS defining the `__unix__` macro. |
 | `SecRandomCopyBytes` | iOS                     | Use the Apple Security framework. |
 | `zx_cprng_draw`      | Fuchsia                 | Use the `zx_cprng_draw()` syscall provided by the Zircon kernel. |
-| `dlsym`              |                         | Use `dlsym()` to find the best option between `getrandom()`, `getentropy()` and `/dev/random`. |
+| `dlsym`              |                         | Use `dlsym()` to find the best option between `getrandom()`, `getentropy()`, and `/dev/random`. |
+| `LoadLibrary`        |                         | Use `LoadLibrary()` to find the best option between the deprecated Win32 cryptography API and `bcrypt.dll`. |
 | `dynamic`            |                         | Alias of `LoadLibrary` under Windows and of `dlsym` otherwise. |
-
-**TODO:** `LoadLibrary` option that searches for the best available method using dynamic symbol loading on Windows.
 
 License
 -------
