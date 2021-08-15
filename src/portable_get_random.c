@@ -221,8 +221,8 @@ dispatch:
                 return errno;
             }
 
-            const size_t count = fread(buffer, 1, (size_t)size, stream);
-            if (count < (size_t)size) {
+            const size_t count = fread(buffer, 1, size, stream);
+            if (count < size) {
                 const int errnum = errno;
                 fclose(stream);
                 return errnum;
@@ -492,8 +492,8 @@ int portable_get_random(unsigned char *buffer, size_t size) {
         return errno;
     }
 
-    const size_t count = fread(buffer, 1, (size_t)size, stream);
-    if (count < (size_t)size) {
+    const size_t count = fread(buffer, 1, size, stream);
+    if (count < size) {
         const int errnum = errno;
         fclose(stream);
         return errnum;
