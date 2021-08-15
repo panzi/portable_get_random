@@ -32,6 +32,16 @@
 
 #if (defined(_WIN32) || defined(_WIN64)) && !defined(__CYGWIN__)
     #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_LoadLibrary
+#elif defined(__Fuchsia__)
+    #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_zx_cprng_draw
+#elif defined(__APPLE__) && defined(__MACH__)
+    #include <TargetConditionals.h>
+
+    #if TARGET_OS_IPHONE
+        #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
+    #else
+        #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_getentropy
+    #endif
 #else
     #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_dlsym
 #endif
