@@ -17,6 +17,8 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#include "portable_get_random.h"
+
 #define PORTABLE_GET_RANDOM_IMPL_getentropy         1
 #define PORTABLE_GET_RANDOM_IMPL_getrandom          2
 #define PORTABLE_GET_RANDOM_IMPL_dev_random         3
