@@ -131,19 +131,19 @@ $(BUILD_DIR)/examples-shared/%$(BIN_EXT): $(BUILD_DIR)/shared-obj/examples/%.o $
 
 $(BUILD_DIR)/obj/%.o: src/%.c
 	@mkdir -p $(BUILD_DIR)/obj
-	$(CC) $(CFLAGS) $(INC_DIRS) $< $(LIB_DIRS) $(LIBS) -c -o $@
+	$(CC) $(CFLAGS) $(INC_DIRS) $< -c -o $@
 
 $(BUILD_DIR)/shared-obj/%.o: src/%.c
 	@mkdir -p $(BUILD_DIR)/shared-obj
-	$(CC) $(CFLAGS) $(SO_FLAGS) $(INC_DIRS) $< $(LIB_DIRS) $(LIBS) -c -o $@
+	$(CC) $(CFLAGS) $(SO_FLAGS) $(INC_DIRS) $< -c -o $@
 
 $(BUILD_DIR)/obj/examples/%.o: examples/%.c
 	@mkdir -p $(BUILD_DIR)/obj/examples
-	$(CC) $(CFLAGS) $(INC_DIRS) $< $(LIB_DIRS) $(LIBS) -c -o $@
+	$(CC) $(CFLAGS) $(INC_DIRS) $< -c -o $@
 
 $(BUILD_DIR)/shared-obj/examples/%.o: examples/%.c
 	@mkdir -p $(BUILD_DIR)/shared-obj/examples
-	$(CC) $(CFLAGS) $(SO_FLAGS) $(INC_DIRS) $< $(LIB_DIRS) $(LIBS) -c -o $@
+	$(CC) $(CFLAGS) $(SO_FLAGS) $(INC_DIRS) $< -c -o $@
 
 $(LIB): $(LIB_OBJS)
 	@mkdir -p $(BUILD_DIR)/lib
