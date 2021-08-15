@@ -47,7 +47,6 @@ int main(int argc, char *argv[]) {
     }
 
     int errnum = portable_get_random(buffer, size);
-    errnum = portable_get_random(buffer, size);
     if (errnum != 0) {
         fprintf(stderr, "*** error: portable_get_random(buffer, %" PRIuPTR "): %s\n", size, strerror(errno));
         goto error;

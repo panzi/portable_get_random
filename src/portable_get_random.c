@@ -150,16 +150,23 @@ int portable_get_random(unsigned char *buffer, size_t size) {
 
 enum PortableGetRandom_Impl {
     PortableGetRandom_Uninitialized,
-    #if !defined(__HAIKU__)
+    #if defined(__APPLE__)
+    PortableGetRandom_SecRandomCopyBytes,
+    #elif !defined(__HAIKU__)
     PortableGetRandom_GetRandom,
     #endif
     PortableGetRandom_GetEntropy,
     PortableGetRandom_DevRandom,
 };
 
-    // make sure we get RTLD_DEFAULT defined
-    #if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
-        #define _DARWIN_C_SOURCE
+    #if defined(__APPLE__)
+        // make sure we get RTLD_DEFAULT defined
+        #if !defined(_DARWIN_C_SOURCE)
+            #define _DARWIN_C_SOURCE
+        #endif
+
+        #include <stdint.h>
+        #include <Security/SecRandom.h>
     #endif
 
     #include <dlfcn.h>
@@ -177,7 +184,10 @@ enum PortableGetRandom_Impl {
 
 int portable_get_random(unsigned char *buffer, size_t size) {
     static enum PortableGetRandom_Impl impl = PortableGetRandom_Uninitialized;
-    #if !defined(__HAIKU__)
+    #if defined(__APPLE__)
+    static int (*SecRandomCopyBytes)(SecRandomRef, size_t, uint8_t *) = NULL;
+    static SecRandomRef kSecRandomDefault = NULL;
+    #elif !defined(__HAIKU__)
     static ssize_t (*getrandom)(void *, size_t, unsigned int) = NULL;
     #endif
     static int (*getentropy)(void *, size_t) = NULL;
@@ -185,7 +195,19 @@ int portable_get_random(unsigned char *buffer, size_t size) {
 dispatch:
     switch (impl) {
         case PortableGetRandom_Uninitialized:
-    #if !defined(__HAIKU__)
+        {
+    #if defined(__APPLE__)
+            void *Security = dlopen("/System/Library/Frameworks/Security.framework/Versions/Current/Security", RTLD_LAZY | RTLD_LOCAL);
+            if (Security != NULL) {
+                void ** kSecRandomDefaultPtr = dlsym(Security, "kSecRandomDefault");
+                *(void**) &SecRandomCopyBytes = dlsym(Security, "SecRandomCopyBytes");
+                if (kSecRandomDefaultPtr && SecRandomCopyBytes) {
+                    kSecRandomDefault = *kSecRandomDefaultPtr;
+                    impl = PortableGetRandom_SecRandomCopyBytes;
+                    goto dispatch;
+                }
+            }
+    #elif !defined(__HAIKU__)
             *(void**) &getrandom = dlsym(RTLD_DEFAULT, "getrandom");
             if (getrandom) {
                 impl = PortableGetRandom_GetRandom;
@@ -201,7 +223,8 @@ dispatch:
             impl = PortableGetRandom_DevRandom;
             goto dispatch;
             break;
-
+        }
+    #if !defined(__APPLE__) && !defined(__HAIKU__)
         case PortableGetRandom_GetRandom:
             while (size > 0) {
                 const ssize_t count = getrandom(buffer, size, GRND_RANDOM);
@@ -216,6 +239,7 @@ dispatch:
                 size   -= count;
             }
             return 0;
+    #endif
 
         case PortableGetRandom_GetEntropy:
             while (size > 0) {
@@ -233,6 +257,38 @@ dispatch:
                 size   -= count;
             }
             return 0;
+
+    #if defined(__APPLE__)
+        case PortableGetRandom_SecRandomCopyBytes:
+        {
+            int status = SecRandomCopyBytes(kSecRandomDefault, size, buffer);
+        
+            switch (status) {
+                case errSecSuccess:
+                    return 0;
+        
+                case errSecUnimplemented:
+                    return ENOSYS;
+        
+                case errSecDiskFull:
+                    return EDQUOT;
+        
+                case errSecIO:
+                    return EIO;
+        
+                case errSecAllocate:
+                    return ENOMEM;
+        
+                case errSecWrPerm:
+                    return EACCES;
+        
+                case errSecParam:
+                default:
+                    return EINVAL;
+            }
+            break;
+        }
+    #endif
 
         case PortableGetRandom_DevRandom:
         {
@@ -455,14 +511,11 @@ cleanup:
 
 #elif PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
 
-    #include <stdint.h>
     #include <stdlib.h>
-    #include <stdio.h>
-    #include <inttypes.h>
+    #include <errno.h>
 
     #include <Security/SecBase.h>
     #include <Security/SecRandom.h>
-    #include <CoreFoundation/CoreFoundation.h>
 
 int portable_get_random(unsigned char *buffer, size_t size) {
     int status = SecRandomCopyBytes(kSecRandomDefault, size, buffer);

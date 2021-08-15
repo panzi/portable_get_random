@@ -2,6 +2,7 @@ CC=gcc
 CFLAGS=-std=c99 -Wall -Werror -pedantic -O3 -DWIN_EXPORT
 BUILD_DIR=build
 LIB_OBJS=$(BUILD_DIR)/obj/portable_get_random.o
+LIBS=
 
 SO_OBJS=$(patsubst $(BUILD_DIR)/obj/%,$(BUILD_DIR)/shared-obj/%,$(LIB_OBJS))
 
@@ -34,8 +35,9 @@ else
     _REAL_IMPL=$(patsubst dynamic,dlsym,$(IMPL))
 
 ifeq ($(patsubst darwin%,darwin,$(TARGET)),darwin)
-    CC     = clang
-    SO_EXT = .dylib
+    CC      = clang
+	CFLAGS += -Qunused-arguments
+    SO_EXT  = .dylib
 endif
 endif
 
@@ -56,7 +58,6 @@ EXAMPLES_SHARED=$(BUILD_DIR)/examples-shared/getrandom$(BIN_EXT)
 LIB=$(BUILD_DIR)/lib/libportable-get-random.a
 SO=$(BUILD_DIR)/lib/$(SO_PREFIX)portable-get-random$(SO_EXT)
 INC=$(BUILD_DIR)/include/portable_get_random.h
-LIBS=
 
 ifeq ($(_REAL_IMPL),BCryptGenRandom)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom
@@ -66,12 +67,17 @@ ifeq ($(_REAL_IMPL),dlsym)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_dlsym
     LIBS   += -ldl
 else
+ifeq ($(_REAL_IMPL),SecRandomCopyBytes)
+    CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
+	LIBS   += -framework Security
+else
 ifeq ($(patsubst /dev/%,/dev/,$(_REAL_IMPL)),/dev/)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_dev_random \
               -DPORTABLE_GET_RANDOM_FILE=\"$(_REAL_IMPL)\"
 else
 ifneq ($(_REAL_IMPL),)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_$(_REAL_IMPL)
+endif
 endif
 endif
 endif
