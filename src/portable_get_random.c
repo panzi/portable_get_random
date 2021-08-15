@@ -25,6 +25,14 @@
 #define PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom    6
 #define PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes 7
 #define PORTABLE_GET_RANDOM_IMPL_zx_cprng_draw      8
+#define PORTABLE_GET_RANDOM_IMPL_dlsym              9
+#define PORTABLE_GET_RANDOM_IMPL_LoadLibrary       10
+
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(__CYGWIN__)
+    #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_LoadLibrary
+#else
+    #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_dlsym
+#endif
 
 #if !defined(PORTABLE_GET_RANDOM_DEV_RANDOM)
     #define PORTABLE_GET_RANDOM_DEV_RANDOM "/dev/random"
@@ -128,6 +136,103 @@ int portable_get_random(unsigned char *buffer, size_t size) {
         size   -= count;
     }
     return 0;
+}
+
+#elif PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_dlsym
+
+enum PortableGetRandom_Impl {
+    PortableGetRandom_Uninitialized,
+    PortableGetRandom_GetRandom,
+    PortableGetRandom_GetEntropy,
+    PortableGetRandom_DevRandom,
+};
+
+    #include <dlfcn.h>
+    #include <errno.h>
+    #include <stdio.h>
+    #include <unistd.h>
+
+    #define MAX_ENTROPY_SIZE 256
+    #define GRND_RANDOM 2
+
+int portable_get_random(unsigned char *buffer, size_t size) {
+    static enum PortableGetRandom_Impl impl = PortableGetRandom_Uninitialized;
+    static ssize_t (*getrandom)(void *, size_t, unsigned int) = NULL;
+    static int (*getentropy)(void *, size_t) = NULL;
+
+dispatch:
+    switch (impl) {
+        case PortableGetRandom_Uninitialized:
+            *(void**) &getrandom = dlsym(NULL, "getrandom");
+            if (getrandom) {
+                impl = PortableGetRandom_GetRandom;
+                goto dispatch;
+            }
+
+            *(void**) &getentropy = dlsym(NULL, "getentropy");
+            if (getentropy) {
+                impl = PortableGetRandom_GetEntropy;
+                goto dispatch;
+            }
+
+            impl = PortableGetRandom_DevRandom;
+            goto dispatch;
+            break;
+
+        case PortableGetRandom_GetRandom:
+            while (size > 0) {
+                const ssize_t count = getrandom(buffer, size, GRND_RANDOM);
+                if (count < 0) {
+                    const int errnum = errno;
+                    if (errnum == EINTR || errnum == EAGAIN) {
+                        continue;
+                    }
+                    return errnum;
+                }
+                buffer += count;
+                size   -= count;
+            }
+            return 0;
+
+        case PortableGetRandom_GetEntropy:
+            while (size > 0) {
+                const size_t count = size < MAX_ENTROPY_SIZE ? size : MAX_ENTROPY_SIZE;
+
+                if (getentropy(buffer, count) != 0) {
+                    const int errnum = errno;
+                    if (errnum == EINTR || errnum == EAGAIN) {
+                        continue;
+                    }
+                    return errnum;
+                }
+                
+                buffer += count;
+                size   -= count;
+            }
+            return 0;
+
+        case PortableGetRandom_DevRandom:
+        {
+            FILE *stream = fopen(PORTABLE_GET_RANDOM_DEV_RANDOM, "rb");
+
+            if (stream == NULL) {
+                return errno;
+            }
+
+            const size_t count = fread(buffer, 1, (size_t)size, stream);
+            if (count < (size_t)size) {
+                const int errnum = errno;
+                fclose(stream);
+                return errnum;
+            }
+
+            fclose(stream);
+
+            return 0;
+        }
+        default:
+            return ENOSYS;
+    }
 }
 
 #elif (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_RtlGenRandom) || (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_CryptGenRandom) || (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom)
@@ -307,12 +412,8 @@ int portable_get_random(unsigned char *buffer, size_t size) {
 
 #elif PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_dev_random
 
-    #include <stdint.h>
     #include <errno.h>
-    #include <stdlib.h>
     #include <stdio.h>
-    #include <string.h>
-    #include <inttypes.h>
 
 int portable_get_random(unsigned char *buffer, size_t size) {
     FILE *stream = fopen(PORTABLE_GET_RANDOM_DEV_RANDOM, "rb");
