@@ -29,9 +29,9 @@ ifeq ($(patsubst win%,win,$(TARGET)),win)
     SO_EXT    = .dll
     SO_PREFIX =
 
-    REAL_IMPL=$(patsubst dynamic,LoadLibrary,$(IMPL))
+    _REAL_IMPL=$(patsubst dynamic,LoadLibrary,$(IMPL))
 else
-    REAL_IMPL=$(patsubst dynamic,dlsym,$(IMPL))
+    _REAL_IMPL=$(patsubst dynamic,dlsym,$(IMPL))
 
 ifeq ($(patsubst darwin%,darwin,$(TARGET)),darwin)
     CC     = clang
@@ -58,20 +58,20 @@ SO=$(BUILD_DIR)/lib/$(SO_PREFIX)portable-get-random$(SO_EXT)
 INC=$(BUILD_DIR)/include/portable_get_random.h
 LIBS=
 
-ifeq ($(REAL_IMPL),BCryptGenRandom)
+ifeq ($(_REAL_IMPL),BCryptGenRandom)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom
     LIBS   += -lbcrypt
 else
-ifeq ($(REAL_IMPL),dlsym)
+ifeq ($(_REAL_IMPL),dlsym)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_dlsym
     LIBS   += -ldl
 else
-ifeq ($(patsubst /dev/%,/dev/,$(REAL_IMPL)),/dev/)
+ifeq ($(patsubst /dev/%,/dev/,$(_REAL_IMPL)),/dev/)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_dev_random \
-              -DPORTABLE_GET_RANDOM_FILE=\"$(REAL_IMPL)\"
+              -DPORTABLE_GET_RANDOM_FILE=\"$(_REAL_IMPL)\"
 else
-ifneq ($(REAL_IMPL),)
-    CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_$(REAL_IMPL)
+ifneq ($(_REAL_IMPL),)
+    CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_$(_REAL_IMPL)
 endif
 endif
 endif

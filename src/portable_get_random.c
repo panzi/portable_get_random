@@ -63,6 +63,7 @@
     #endif
 #elif defined(__FreeBSD__) || defined(__DragonFly__)
     #include <sys/param.h>
+
     #if (defined(__FreeBSD_version) && __FreeBSD_version >= 1200000) || \
         (defined(__DragonFly_version) && __DragonFly_version >= 500700)
         #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_getrandom
@@ -155,6 +156,10 @@ enum PortableGetRandom_Impl {
     PortableGetRandom_DevRandom,
 };
 
+    #if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+        #define _DARWIN_C_SOURCE
+    #endif
+
     #include <dlfcn.h>
     #include <errno.h>
     #include <stdio.h>
@@ -162,6 +167,11 @@ enum PortableGetRandom_Impl {
 
     #define MAX_ENTROPY_SIZE 256
     #define GRND_RANDOM 2
+
+    // RTLD_DEFAULT is not definded with -std=c99 but it is just NULL for GNU libc
+    #if !defined(RTLD_DEFAULT) && defined(__GLIBC__)
+        #define RTLD_DEFAULT NULL
+    #endif
 
 int portable_get_random(unsigned char *buffer, size_t size) {
     static enum PortableGetRandom_Impl impl = PortableGetRandom_Uninitialized;
