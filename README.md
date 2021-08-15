@@ -57,6 +57,11 @@ Possible values for `IMPL`:
 | `LoadLibrary`        |                                        | Use `LoadLibrary()` to find the best option between the deprecated Win32 cryptography API and `bcrypt.dll`. |
 | `dynamic`            |                                        | Alias of `LoadLibrary` under Windows and of `dlsym` otherwise. |
 
+If you drop these files into your own program and don't want to use the defaults
+you need to add the compiler flag: `-DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_$IMPL`
+That means if you want to use `RtlGenRandom` use the flag:
+`-DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_RtlGenRandom`
+
 License
 -------
 

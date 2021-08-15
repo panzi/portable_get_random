@@ -50,7 +50,7 @@
     #define PORTABLE_GET_RANDOM_DEV_RANDOM "/dev/random"
 #endif
 
-#if !defined(PORTABLE_GET_RANDOM_USE)
+#if !defined(PORTABLE_GET_RANDOM_IMPL)
     #if defined(__linux__)
         // we compile with -std=c99 but here we do want getentropy()
         #define _DEFAULT_SOURCE 1
@@ -58,48 +58,48 @@
         #include <sys/syscall.h>
 
         #if defined(SYS_getrandom)
-            #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_getrandom
+            #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getrandom
         #else
             #include <features.h>
 
             #if defined(__GLIBC__) && (__GLIBC__ > 2 || __GLIBC__ == 2 && __GLIBC_MINOR__ >= 25)
-                #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_getentropy
+                #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getentropy
             #else
-                #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_dev_random
+                #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_dev_random
             #endif
         #endif
     #elif defined(__CYGWIN__) || (defined(__sun) && defined(__SVR4))
-        #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_getrandom
+        #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getrandom
     #elif defined(__APPLE__) && defined(__MACH__)
         #include <TargetConditionals.h>
 
         #if TARGET_OS_IPHONE
-            #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
+            #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
         #else
-            #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_getentropy
+            #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getentropy
         #endif
     #elif defined(__FreeBSD__) || defined(__DragonFly__)
         #include <sys/param.h>
         #if (defined(__FreeBSD_version) && __FreeBSD_version >= 1200000) || \
             (defined(__DragonFly_version) && __DragonFly_version >= 500700)
-            #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_getrandom
+            #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getrandom
         #else
-            #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_dev_random
+            #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_dev_random
         #endif
     #elif defined(__OpenBSD__)
-        #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_getentropy
+        #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getentropy
     #elif defined(_WIN32) || defined(_WIN64)
-        #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_CryptGenRandom
+        #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_CryptGenRandom
     #elif defined(__Fuchsia__)
-        #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_zx_cprng_draw
+        #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_zx_cprng_draw
     #elif defined(__unix__) || defined(_POSIX_VERSION) || defined(__HAIKU__)
-        #define PORTABLE_GET_RANDOM_USE PORTABLE_GET_RANDOM_IMPL_dev_random
+        #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_dev_random
     #else
         #error "System not supported by portable_get_random()."
     #endif
 #endif
 
-#if PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_getrandom
+#if PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_getrandom
 
     #include <errno.h>
     #include <sys/random.h>
@@ -120,7 +120,7 @@ int portable_get_random(unsigned char *buffer, size_t size) {
     return 0;
 }
 
-#elif PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_getentropy
+#elif PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_getentropy
 
     // we compile with -std=c99 but here we do want getentropy()
     #if !defined(_DEFAULT_SOURCE)
@@ -150,7 +150,7 @@ int portable_get_random(unsigned char *buffer, size_t size) {
     return 0;
 }
 
-#elif PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_dlsym
+#elif PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_dlsym
 
 enum PortableGetRandom_Impl {
     PortableGetRandom_Uninitialized,
@@ -247,14 +247,14 @@ dispatch:
     }
 }
 
-#elif (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_RtlGenRandom) || \
-      (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_CryptGenRandom) || \
-      (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom) || \
-      (PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_LoadLibrary)
+#elif (PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_RtlGenRandom) || \
+      (PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_CryptGenRandom) || \
+      (PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom) || \
+      (PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_LoadLibrary)
 
     #include <windows.h>
 
-    #if PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_RtlGenRandom
+    #if PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_RtlGenRandom
 
         #include <ntsecapi.h>
         #include <errno.h>
@@ -266,7 +266,7 @@ int portable_get_random(unsigned char *buffer, size_t size) {
     return 0;
 }
 
-    #elif PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom
+    #elif PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom
 
         // Has nothing to do with bcrypt. It is the new ("better") Windows cryptography API.
         #include <bcrypt.h>
@@ -297,7 +297,7 @@ int portable_get_random(unsigned char *buffer, size_t size) {
         #include <wincrypt.h>
         #include <errno.h>
 
-        #if PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_LoadLibrary
+        #if PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_LoadLibrary
 
             #include <ntstatus.h>
 
@@ -442,7 +442,7 @@ cleanup:
 
     #endif
 
-#elif PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
+#elif PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
 
     #include <stdint.h>
     #include <stdlib.h>
@@ -481,7 +481,7 @@ int portable_get_random(unsigned char *buffer, size_t size) {
     }
 }
 
-#elif PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_zx_cprng_draw
+#elif PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_zx_cprng_draw
 
     #include <zircon/syscalls.h>
 
@@ -490,7 +490,7 @@ int portable_get_random(unsigned char *buffer, size_t size) {
     return 0;
 }
 
-#elif PORTABLE_GET_RANDOM_USE == PORTABLE_GET_RANDOM_IMPL_dev_random
+#elif PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_dev_random
 
     #include <errno.h>
     #include <stdio.h>
@@ -516,6 +516,6 @@ int portable_get_random(unsigned char *buffer, size_t size) {
 
 #else
 
-    #error "PORTABLE_GET_RANDOM_USE has an invalid value."
+    #error "PORTABLE_GET_RANDOM_IMPL has an invalid value."
 
 #endif
