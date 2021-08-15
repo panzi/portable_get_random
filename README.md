@@ -46,7 +46,7 @@ Possible values for `IMPL`:
 | `IMPL`               | Default On              | Description |
 | -------------------- | ----------------------- | ----------- |
 | `getentropy`         | OpenBSD, FreeBSD, macOS | Use the `getentropy()` syscall (or C library function) provided by many Unix(-like) operating systems. |
-| `getrandom`          | Linux, Solaris          | Use the `getrandom()` Linux syscall. |
+| `getrandom`          | Linux, Solaris          | Use the `getrandom()` Linux syscall with `GRND_RANDOM` flag. |
 | `RtlGenRandom`       |                         | Use `RtlGenRandom()` Win32 pseudo random number generator (very old function that might go away). |
 | `CryptGenRandom`     | Windows                 | Use the deprecated Win32 cryptography API. |
 | `BCryptGenRandom`    |                         | Use the new Windows cryptography API only available on Windows 8 and newer. |
