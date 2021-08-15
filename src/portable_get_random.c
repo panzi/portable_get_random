@@ -30,73 +30,67 @@
 #define PORTABLE_GET_RANDOM_IMPL_dlsym              9
 #define PORTABLE_GET_RANDOM_IMPL_LoadLibrary       10
 
-#if (defined(_WIN32) || defined(_WIN64)) && !defined(__CYGWIN__)
-    #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_LoadLibrary
-#elif defined(__Fuchsia__)
-    #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_zx_cprng_draw
-#elif defined(__APPLE__) && defined(__MACH__)
-    #include <TargetConditionals.h>
-
-    #if TARGET_OS_IPHONE
-        #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
-    #else
-        #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_getentropy
-    #endif
-#else
-    #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_dlsym
-#endif
-
 #if !defined(PORTABLE_GET_RANDOM_FILE)
     #define PORTABLE_GET_RANDOM_FILE "/dev/random"
 #endif
 
-#if !defined(PORTABLE_GET_RANDOM_IMPL)
-    #if defined(__linux__)
-        // we compile with -std=c99 but here we do want getentropy()
-        #define _DEFAULT_SOURCE 1
+#if defined(__linux__)
+    // we compile with -std=c99 but here we do want getentropy()
+    #define _DEFAULT_SOURCE 1
 
-        #include <sys/syscall.h>
+    #include <sys/syscall.h>
 
-        #if defined(SYS_getrandom)
-            #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getrandom
-        #else
-            #include <features.h>
-
-            #if defined(__GLIBC__) && (__GLIBC__ > 2 || __GLIBC__ == 2 && __GLIBC_MINOR__ >= 25)
-                #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getentropy
-            #else
-                #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_dev_random
-            #endif
-        #endif
-    #elif defined(__CYGWIN__) || (defined(__sun) && defined(__SVR4))
-        #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getrandom
-    #elif defined(__APPLE__) && defined(__MACH__)
-        #include <TargetConditionals.h>
-
-        #if TARGET_OS_IPHONE
-            #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
-        #else
-            #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getentropy
-        #endif
-    #elif defined(__FreeBSD__) || defined(__DragonFly__)
-        #include <sys/param.h>
-        #if (defined(__FreeBSD_version) && __FreeBSD_version >= 1200000) || \
-            (defined(__DragonFly_version) && __DragonFly_version >= 500700)
-            #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getrandom
-        #else
-            #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_dev_random
-        #endif
-    #elif defined(__OpenBSD__)
-        #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_getentropy
-    #elif defined(_WIN32) || defined(_WIN64)
-        #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_CryptGenRandom
-    #elif defined(__Fuchsia__)
-        #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_zx_cprng_draw
-    #elif defined(__unix__) || defined(_POSIX_VERSION) || defined(__HAIKU__)
-        #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_dev_random
+    #if defined(SYS_getrandom)
+        #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_getrandom
     #else
-        #error "System not supported by portable_get_random()."
+        #include <features.h>
+
+        #if defined(__GLIBC__) && (__GLIBC__ > 2 || __GLIBC__ == 2 && __GLIBC_MINOR__ >= 25)
+            #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_getentropy
+        #else
+            #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_dev_random
+        #endif
     #endif
+#elif defined(__CYGWIN__) || (defined(__sun) && defined(__SVR4))
+    #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_getrandom
+#elif defined(__APPLE__) && defined(__MACH__)
+    #include <TargetConditionals.h>
+
+    #if TARGET_OS_IPHONE
+        #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
+    #else
+        #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_getentropy
+    #endif
+#elif defined(__FreeBSD__) || defined(__DragonFly__)
+    #include <sys/param.h>
+    #if (defined(__FreeBSD_version) && __FreeBSD_version >= 1200000) || \
+        (defined(__DragonFly_version) && __DragonFly_version >= 500700)
+        #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_getrandom
+    #else
+        #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_dev_random
+    #endif
+#elif defined(__OpenBSD__)
+    #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_getentropy
+#elif defined(_WIN32) || defined(_WIN64)
+    #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_CryptGenRandom
+#elif defined(__Fuchsia__)
+    #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_zx_cprng_draw
+#elif defined(__unix__) || defined(_POSIX_VERSION) || defined(__HAIKU__)
+    #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_dev_random
+#else
+    #error "System not supported by portable_get_random()."
+#endif
+
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(__CYGWIN__)
+    #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_LoadLibrary
+#elif defined(__Fuchsia__) || (defined(__APPLE__) && defined(__MACH__))
+    #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_default
+#else
+    #define PORTABLE_GET_RANDOM_IMPL_dynamic PORTABLE_GET_RANDOM_IMPL_dlsym
+#endif
+
+#if !defined(PORTABLE_GET_RANDOM_IMPL)
+    #define PORTABLE_GET_RANDOM_IMPL PORTABLE_GET_RANDOM_IMPL_default
 #endif
 
 #if PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_getrandom
@@ -154,7 +148,9 @@ int portable_get_random(unsigned char *buffer, size_t size) {
 
 enum PortableGetRandom_Impl {
     PortableGetRandom_Uninitialized,
+    #if !defined(__HAIKU__)
     PortableGetRandom_GetRandom,
+    #endif
     PortableGetRandom_GetEntropy,
     PortableGetRandom_DevRandom,
 };
@@ -169,19 +165,22 @@ enum PortableGetRandom_Impl {
 
 int portable_get_random(unsigned char *buffer, size_t size) {
     static enum PortableGetRandom_Impl impl = PortableGetRandom_Uninitialized;
+    #if !defined(__HAIKU__)
     static ssize_t (*getrandom)(void *, size_t, unsigned int) = NULL;
+    #endif
     static int (*getentropy)(void *, size_t) = NULL;
 
 dispatch:
     switch (impl) {
         case PortableGetRandom_Uninitialized:
-            *(void**) &getrandom = dlsym(NULL, "getrandom");
+    #if !defined(__HAIKU__)
+            *(void**) &getrandom = dlsym(RTLD_DEFAULT, "getrandom");
             if (getrandom) {
                 impl = PortableGetRandom_GetRandom;
                 goto dispatch;
             }
-
-            *(void**) &getentropy = dlsym(NULL, "getentropy");
+    #endif
+            *(void**) &getentropy = dlsym(RTLD_DEFAULT, "getentropy");
             if (getentropy) {
                 impl = PortableGetRandom_GetEntropy;
                 goto dispatch;
