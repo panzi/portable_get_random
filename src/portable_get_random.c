@@ -109,6 +109,7 @@ int portable_get_random(unsigned char *buffer, size_t size) {
             }
             return errnum;
         }
+
         buffer += count;
         size   -= count;
     }
@@ -138,7 +139,7 @@ int portable_get_random(unsigned char *buffer, size_t size) {
             }
             return errnum;
         }
-        
+
         buffer += count;
         size   -= count;
     }
@@ -156,6 +157,7 @@ enum PortableGetRandom_Impl {
     PortableGetRandom_DevRandom,
 };
 
+    // make sure we get RTLD_DEFAULT defined
     #if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
         #define _DARWIN_C_SOURCE
     #endif
