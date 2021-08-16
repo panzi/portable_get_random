@@ -36,7 +36,7 @@ else
 
 ifeq ($(patsubst darwin%,darwin,$(TARGET)),darwin)
     CC      = clang
-	CFLAGS += -Qunused-arguments
+    CFLAGS += -Qunused-arguments
     SO_EXT  = .dylib
 endif
 endif
@@ -69,7 +69,7 @@ ifeq ($(_REAL_IMPL),dlsym)
 else
 ifeq ($(_REAL_IMPL),SecRandomCopyBytes)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_SecRandomCopyBytes
-	LIBS   += -framework Security
+    LIBS   += -framework Security
 else
 ifeq ($(patsubst /dev/%,/dev/,$(_REAL_IMPL)),/dev/)
     CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_dev_random \
@@ -80,6 +80,28 @@ ifneq ($(_REAL_IMPL),)
 endif
 endif
 endif
+endif
+endif
+
+ifeq ($(patsubst darwin%,darwin,$(TARGET)),darwin)
+    PSEUDO_STATIC=ON
+else
+ifeq ($(_REAL_IMP),dlsym)
+    PSEUDO_STATIC=ON
+else
+    PSEUDO_STATIC=OFF
+endif
+endif
+
+ifeq ($(PSEUDO_STATIC),ON)
+    STATIC_LIBS = $(LIB) $(LIBS)
+    STATIC_FLAG =
+else
+ifeq ($(PSEUDO_STATIC),OFF)
+    STATIC_LIBS = $(LIB_DIRS) -lportable-get-random $(LIBS)
+    STATIC_FLAG = -static
+else
+    $(error illegal value for PSEUDO_STATIC=$(PSEUDO_STATIC))
 endif
 endif
 
@@ -123,7 +145,7 @@ uninstall:
 
 $(BUILD_DIR)/examples/%$(BIN_EXT): $(BUILD_DIR)/obj/examples/%.o $(LIB)
 	@mkdir -p $(BUILD_DIR)/examples
-	$(CC) $(CFLAGS) -static $< $(LIB_DIRS) -lportable-get-random $(LIBS) -o $@
+	$(CC) $(CFLAGS) $(STATIC_FLAG) $< $(STATIC_LIBS) -o $@
 
 $(BUILD_DIR)/examples-shared/%$(BIN_EXT): $(BUILD_DIR)/shared-obj/examples/%.o $(SO)
 	@mkdir -p $(BUILD_DIR)/examples-shared
