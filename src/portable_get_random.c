@@ -21,7 +21,7 @@
 
 #define PORTABLE_GET_RANDOM_IMPL_getentropy         1
 #define PORTABLE_GET_RANDOM_IMPL_getrandom          2
-#define PORTABLE_GET_RANDOM_IMPL_dev_random         3
+#define PORTABLE_GET_RANDOM_IMPL_file               3
 #define PORTABLE_GET_RANDOM_IMPL_RtlGenRandom       4
 #define PORTABLE_GET_RANDOM_IMPL_CryptGenRandom     5
 #define PORTABLE_GET_RANDOM_IMPL_BCryptGenRandom    6
@@ -48,7 +48,7 @@
         #if defined(__GLIBC__) && (__GLIBC__ > 2 || __GLIBC__ == 2 && __GLIBC_MINOR__ >= 25)
             #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_getentropy
         #else
-            #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_dev_random
+            #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_file
         #endif
     #endif
 #elif defined(__CYGWIN__) || (defined(__sun) && defined(__SVR4))
@@ -68,7 +68,7 @@
         (defined(__DragonFly_version) && __DragonFly_version >= 500700)
         #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_getrandom
     #else
-        #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_dev_random
+        #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_file
     #endif
 #elif defined(__OpenBSD__)
     #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_getentropy
@@ -77,7 +77,7 @@
 #elif defined(__Fuchsia__)
     #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_zx_cprng_draw
 #elif defined(__unix__) || defined(_POSIX_VERSION) || defined(__HAIKU__)
-    #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_dev_random
+    #define PORTABLE_GET_RANDOM_IMPL_default PORTABLE_GET_RANDOM_IMPL_file
 #else
     #error "System not supported by portable_get_random()."
 #endif
@@ -554,7 +554,7 @@ int portable_get_random(unsigned char *buffer, size_t size) {
     return 0;
 }
 
-#elif PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_dev_random
+#elif PORTABLE_GET_RANDOM_IMPL == PORTABLE_GET_RANDOM_IMPL_file
 
     #include <errno.h>
     #include <stdio.h>

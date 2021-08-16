@@ -72,7 +72,7 @@ ifeq ($(_REAL_IMPL),SecRandomCopyBytes)
     LIBS   += -framework Security
 else
 ifeq ($(patsubst /dev/%,/dev/,$(_REAL_IMPL)),/dev/)
-    CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_dev_random \
+    CFLAGS += -DPORTABLE_GET_RANDOM_IMPL=PORTABLE_GET_RANDOM_IMPL_file \
               -DPORTABLE_GET_RANDOM_FILE=\"$(_REAL_IMPL)\"
 else
 ifneq ($(_REAL_IMPL),)
