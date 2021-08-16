@@ -196,6 +196,20 @@ dispatch:
     switch (impl) {
         case PortableGetRandom_Uninitialized:
         {
+    #if !defined(__HAIKU__) && !defined(__APPLE__)
+            *(void**) &getrandom = dlsym(RTLD_DEFAULT, "getrandom");
+            if (getrandom) {
+                impl = PortableGetRandom_GetRandom;
+                goto dispatch;
+            }
+    #endif
+
+            *(void**) &getentropy = dlsym(RTLD_DEFAULT, "getentropy");
+            if (getentropy) {
+                impl = PortableGetRandom_GetEntropy;
+                goto dispatch;
+            }
+
     #if defined(__APPLE__)
             void *Security = dlopen("/System/Library/Frameworks/Security.framework/Versions/Current/Security", RTLD_LAZY | RTLD_LOCAL);
             if (Security != NULL) {
@@ -207,18 +221,7 @@ dispatch:
                     goto dispatch;
                 }
             }
-    #elif !defined(__HAIKU__)
-            *(void**) &getrandom = dlsym(RTLD_DEFAULT, "getrandom");
-            if (getrandom) {
-                impl = PortableGetRandom_GetRandom;
-                goto dispatch;
-            }
     #endif
-            *(void**) &getentropy = dlsym(RTLD_DEFAULT, "getentropy");
-            if (getentropy) {
-                impl = PortableGetRandom_GetEntropy;
-                goto dispatch;
-            }
 
             impl = PortableGetRandom_DevRandom;
             goto dispatch;
