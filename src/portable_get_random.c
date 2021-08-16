@@ -219,6 +219,8 @@ dispatch:
                     kSecRandomDefault = *kSecRandomDefaultPtr;
                     impl = PortableGetRandom_SecRandomCopyBytes;
                     goto dispatch;
+                } else {
+                    dlclose(Security);
                 }
             }
     #endif
@@ -395,6 +397,7 @@ dispatch:
 
             BCryptGenRandom = (NTSTATUS (WINAPI*)(BCRYPT_ALG_HANDLE, PUCHAR, ULONG, ULONG))GetProcAddress(bcrypt, "BCryptGenRandom");
             if (BCryptGenRandom == NULL) {
+                FreeLibrary(bcrypt);
                 impl = PortableGetRandom_Crypt;
                 goto dispatch;
             }
