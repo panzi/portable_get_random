@@ -86,11 +86,7 @@ endif
 ifeq ($(patsubst darwin%,darwin,$(TARGET)),darwin)
     PSEUDO_STATIC=ON
 else
-ifeq ($(_REAL_IMP),dlsym)
-    PSEUDO_STATIC=ON
-else
     PSEUDO_STATIC=OFF
-endif
 endif
 
 ifeq ($(PSEUDO_STATIC),ON)
