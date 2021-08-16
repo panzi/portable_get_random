@@ -16,7 +16,116 @@ POSIX error. This of course looses details (e.g. many Windows or macOS errors
 are mapped to the same POSIX error). If there is no good mapping `EINVAL` is
 used.
 
-So far only tested on Linux and WINE.
+So far only tested on Linux, WINE, and macOS.
+
+* [Setup and Compilation](#setup-and-compilation)
+  * [Compile static library](#compile-static-library)
+    * [Compile statically linked examples](#compile-statically-linked-examples)
+  * [Compile shared library](#compile-shared-library)
+    * [Compile dynamically linked examples](#compile-dynamically-linked-examples)
+  * [Compile Release](#compile-release)
+  * [Cross Compilation](#cross-compilation)
+* [Implementation](#implementation)
+* [License](#license)
+
+Setup and Compilation
+---------------------
+
+This library has no dependencies so no setup is needed. You can even just
+drop the header and source file into your own project and are done using
+the defaults. If you don't want to use defaults see:
+[Implementation](#implementation).
+
+### Compile static library
+
+```bash
+make
+```
+
+(or `make static`)
+
+This will generate these files:
+
+* `build/$target/$release/lib/libportable-get-random.a`
+* `build/$target/$release/include/portable_get_random.h`
+
+Where `$release` is either `debug` or `release` (see also
+[Compile Release](#compile-release)).
+
+#### Compile statically linked examples
+
+```bash
+make examples
+```
+
+This will generate these files:
+
+* `build/$target/$release/examples/getrandom`
+
+Note that under macOS there are no truly statically linked binaries that link
+the standard C library. Therefore for macOS this will be a dynamically linked
+binary, but the object files of `libportable-get-random.a` will be compiled
+into to binary like any other object files directly belonging to it.
+
+You can compile examples that way for other platforms by passing `PSEUDO_STATIC=ON`:
+
+```bash
+make PSEUDO_STATIC=ON examples
+```
+
+### Compile shared library
+
+```bash
+make shared
+```
+
+This will generate these files:
+
+* `build/$target/$release/lib/libportable-get-random.so`
+* `build/$target/$release/include/portable_get_random.h`
+
+#### Compile dynamically linked examples
+
+```bash
+make examples_shared
+```
+
+This will generate these files:
+
+* `build/$target/$release/examples-shared/getrandom`
+
+To run the dynamically linked example program you need to put the
+compiled shared libraries into your `$LD_LIBRARY_PATH`, e.g.:
+
+```bash
+export LD_LIBRARY_PATH=$PWD/build/linux64/debug/lib:$LD_LIBRARY_PATH
+```
+
+### Compile Release
+
+Per default a debug configuration will be compiled. To compile in release mode
+you just need to run:
+
+```bash
+make RELEASE=ON
+```
+
+### Cross Compilation
+
+For cross compilation set the flag `TARGET` to values like `win32`, `win64`,
+`linux32`, or `linux64`. Per default (for non-cross compilation) `TARGET` is:
+`$(uname|tr '[:upper:]' '[:lower:]')$(getconf LONG_BIT)`
+
+Example:
+
+```bash
+make TARGET=win32
+```
+
+Cross compiling to Windows on Linux requires `i686-w64-mingw32-gcc` or
+`x86_64-w64-mingw32-gcc`. Other than that case cross compilation just means
+to compile a 32 bit binary on a 64 bit system, but targeting the same operating
+system and base processor architecture.
 
 Implementation
 --------------
