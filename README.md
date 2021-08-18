@@ -11,10 +11,10 @@ This function can be used to get cryptographically random bytes on various
 operating systems.
 
 On success the return value is 0, otherwise it is an `errno.h` error value.
-Under non-POSIX operating systems operating system errors are converted to a
-POSIX error. This of course looses details (e.g. many Windows or macOS errors
+Under non-POSIX operating systems operating system errors are converted to
+POSIX errors. This of course looses details (e.g. many Windows or macOS errors
 are mapped to the same POSIX error). If there is no good mapping `EINVAL` is
-used.
+returned.
 
 So far only tested on Linux, WINE, and macOS.
 
@@ -177,4 +177,4 @@ For this (and for the fallback path of `dlsym`) you can define an extra flag:
 License
 -------
 
-[MIT License](#LICENSE.txt)
+[MIT License](LICENSE.txt)
